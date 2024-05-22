@@ -107,9 +107,9 @@ class MainWindow(QMainWindow):
         osname = platform.system()
         width, height = get_screensize()
         if width > 1920 and height > 1200:
-            self.Ui_MainWindow.setGeometry(0, 0, 1920, 1080) # WQXGA (Wide-QXGA)
+            self.Ui_MainWindow.setGeometry(100, 100, 1920, 1080) # WQXGA (Wide-QXGA)
         else:
-            self.Ui_MainWindow.setGeometry(0, 0, 1024, 768) # WQXGA (Wide-QXGA)
+            self.Ui_MainWindow.setGeometry(100, 100, 1024, 768) # WQXGA (Wide-QXGA)
 
         if osname == 'Darwin':
             font = QFont()
