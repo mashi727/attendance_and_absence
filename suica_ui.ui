@@ -227,10 +227,10 @@
          <string>出勤</string>
         </property>
         <property name="checkable">
-         <bool>true</bool>
+         <bool>false</bool>
         </property>
         <property name="autoExclusive">
-         <bool>true</bool>
+         <bool>false</bool>
         </property>
        </widget>
       </item>
@@ -263,10 +263,10 @@
          <string>退勤</string>
         </property>
         <property name="checkable">
-         <bool>true</bool>
+         <bool>false</bool>
         </property>
         <property name="autoExclusive">
-         <bool>true</bool>
+         <bool>false</bool>
         </property>
        </widget>
       </item>

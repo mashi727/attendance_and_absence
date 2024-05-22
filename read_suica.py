@@ -2,7 +2,7 @@ import os
 import sys
 from PySide6 import QtGui
 from PySide6 import QtCore, QtWidgets, QtUiTools
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QVBoxLayout, QPushButton
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QVBoxLayout, QPushButton, QMessageBox
 from PySide6.QtWidgets import QTableView
 from PySide6.QtGui import QFont
 import sqlite3
@@ -15,8 +15,6 @@ from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QApplication
 
 
 sys.setrecursionlimit(2000)
-
-
 
 # Key Event
 from PySide6.QtCore import Qt
@@ -45,20 +43,12 @@ import numpy as np
 import pyqtgraph as pg
 import pandas as pd
 import math
-import matplotlib.pyplot as plt
 
 
-import pyqtgraph as pg
 
 fontCss = {'font-family': "Arial, Meiryo", 'font-size': '16pt'}
 fontCss["color"] = '#fff' 
 
-# DockLabelをグレーにする
-# http://fatbald.seesaa.net/article/451667700.html
-from pyqtgraph.dockarea.Dock import DockLabel
-def updateStyle(self):
-    self.setStyleSheet("DockLabel { color: #FFF; background-color: #444; font-size:20pt}")
-setattr(DockLabel, 'updateStyle', updateStyle)
 
 
 # tag::model[]
@@ -71,7 +61,38 @@ class FilePath:
     filename: str
     data_filename: str
 
+import binascii
+import nfc
+import time
+import sys
+from threading import Thread, Timer
 
+# Suica待ち受けの1サイクル秒
+TIME_cycle = 1.0
+# Suica待ち受けの反応インターバル秒
+TIME_interval = 0.2
+# タッチされてから次の待ち受けを開始するまで無効化する秒
+TIME_wait = 3
+
+# NFC接続リクエストのための準備
+# 212F(FeliCa)で設定
+target_req_suica = nfc.clf.RemoteTarget("212F")
+# 0003(Suica)
+target_req_suica.sensf_req = bytearray.fromhex("0000030000")
+
+"""
+                    #特定のIDmだった場合のアクション
+                    if str(idm) == "b'0139727fffb7e6f5'":
+                        QMessageBox.warning(None, "Notice!", "増野さんおはようございます！", QMessageBox.Yes)
+                        self.Ui_MainWindow.shukkinnButton.setStyleSheet("QPushButton:checked{background-color: rgb(200, 200, 0)}")
+                        self.clf.close()
+                        break
+                    else:
+                        QMessageBox.warning(None, "Notice!", "未登録です。", QMessageBox.Yes)
+                        self.Ui_MainWindow.shukkinnButton.setStyleSheet("QPushButton:checked{background-color: rgb(200, 200, 200)}")
+                        self.clf.close()
+                        break
+"""
 
 
 class MainWindow(QMainWindow):
@@ -81,13 +102,100 @@ class MainWindow(QMainWindow):
         self.Ui_MainWindow = QtUiTools.QUiLoader().load("./suica_ui.ui")
         self.Ui_MainWindow.setWindowTitle("出退勤入力ツール")
 
+        self.Ui_MainWindow.shukkinnButton.setCheckable(True)
+        self.Ui_MainWindow.taikinButton.setCheckable(True)
+        # pressedは、すぐリリースされる。
+        self.Ui_MainWindow.shukkinnButton.setStyleSheet("QPushButton::checked{background-color: #aaff00}")
+        self.Ui_MainWindow.taikinButton.setStyleSheet("QPushButton:checked{background-color: #aaff00}")
+        #self.Ui_MainWindow.shukkinnButton.toggle()
+        #self.Ui_MainWindow.taikinButton.toggle()
+        self.Ui_MainWindow.shukkinnButton.clicked.connect(self.shukkin)
+        #self.Ui_MainWindow.shukkinnButton.released.connect(lambda:self.device_close())
+        self.Ui_MainWindow.taikinButton.clicked.connect(self.taikin)
+        #self.Ui_MainWindow.taikinButton.released.connect(lambda:self.device_close())
 
         layout = QVBoxLayout()
         self.Ui_MainWindow.widget.setLayout(layout)
         self.layout = layout
-        
         self.clearLayout(self.layout)
         DrawClock.draw_graph(self) # DrawClockは、execの中で定義する必要がある。 
+
+
+    def device_close(self):
+        try:
+            self.clf.close()
+            print('clf closed.')
+        except:
+            print('clf already closed.')
+
+    def button_state_shukkinn(self):
+        if self.Ui_MainWindow.shukkinnButton.isChecked():
+            #self.device_close()
+            self.Ui_MainWindow.shukkinnButton.toggle()
+            #self.Ui_MainWindow.taikinButton.toggle()
+        else:
+            pass
+
+    def button_state_taikin(self):
+        if self.Ui_MainWindow.taikinButton.isChecked():
+            self.Ui_MainWindow.taikinButton.toggle()
+            #self.Ui_MainWindow.shukkinnButton.toggle()
+        else:
+            pass
+
+    def shukkin(self):
+        if self.Ui_MainWindow.taikinButton.isChecked():
+            self.Ui_MainWindow.taikinButton.toggle()
+            #self.button_state_taikin()
+            print('Now shukkin')
+            idm = self.readSuica()
+            print(idm)
+        else:
+            #self.button_state_taikin()
+            print('Now shukkin')
+            idm = self.readSuica()
+            print(idm)
+        self.Ui_MainWindow.shukkinnButton.toggle()
+
+    def taikin(self):
+        self.button_state_shukkinn()
+        print('Now taikin')
+        idm = self.readSuica()
+        print(idm)
+        self.Ui_MainWindow.taikinButton.toggle()
+
+    def readSuica(self):
+        try:
+            clf = nfc.ContactlessFrontend('usb')
+            self.clf = clf
+            try_num = 0
+            while True:
+                # Suica待ち受け開始
+                # clf.sense( [リモートターゲット], [検索回数], [検索の間隔] )
+                target_res = clf.sense(target_req_suica, iterations=int(TIME_cycle//TIME_interval)+1 , interval=TIME_interval)
+                #print(type(target_res))
+                if target_res is None:
+                    try_num = try_num + 1
+                    if try_num > 3:
+                        self.device_close()
+                        QMessageBox.warning(None, "Notice!", "カードを置いてください!", QMessageBox.Yes)
+                    else:
+                        pass
+                else:
+                    #tag = nfc.tag.tt3.Type3Tag(clf, target_res)
+                    #なんか仕様変わったっぽい？↓なら動いた
+                    tag = nfc.tag.activate_tt3(clf, target_res)
+                    tag.sys = 3
+
+                    #IDmを取り出す
+                    idm = binascii.hexlify(tag.idm).decode()
+                    clf.close()
+                    break
+            return idm
+
+        except KeyboardInterrupt:
+            self.clf.close()
+            print(' Catch Ctrl-C. 終了します!')
 
     def clearLayout(self, layout):
         while layout.count():
@@ -103,7 +211,6 @@ class DrawClock():
         super(DrawClock, self).__init__(*args, **kwargs)
 
     def draw_graph(self):
-        #area = DockArea()
         win = pg.GraphicsLayoutWidget(show=True, title='Analog clock')
         init_window_size = 900
         win.resize(init_window_size, init_window_size)
