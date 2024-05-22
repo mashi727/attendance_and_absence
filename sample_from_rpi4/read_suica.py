@@ -105,7 +105,7 @@ class DrawClock():
     def draw_graph(self):
         #area = DockArea()
         win = pg.GraphicsLayoutWidget(show=True, title='Analog clock')
-        init_window_size = 800
+        init_window_size = 900
         win.resize(init_window_size, init_window_size)
         self.layout.addWidget(win)  
         
@@ -145,7 +145,7 @@ class DrawClock():
             graph.plot([x1, x2], [y1, y2], pen=pen)
 
 
-        font_size = 64
+        font_size = 48
 
         hour_texts = []
 
