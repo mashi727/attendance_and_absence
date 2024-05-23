@@ -2,10 +2,9 @@ import os
 import sys
 from PySide6 import QtGui
 from PySide6 import QtCore, QtWidgets, QtUiTools
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QVBoxLayout, QPushButton, QMessageBox
+from PySide6.QtWidgets import QApplication, QMainWindow, QDialog, QVBoxLayout, QLabel, QMessageBox, QDialogButtonBox
 from PySide6.QtWidgets import QTableView
 from PySide6.QtGui import QFont
-import sqlite3
 
 import datetime
 import sys
@@ -39,11 +38,9 @@ This example demonstrates many of the 2D plotting capabilities
 in pyqtgraph. All of the plots may be panned/scaled by dragging with 
 the left/right mouse buttons. Right click on any plot to show a context menu.
 """
-import numpy as np
 import pyqtgraph as pg
 import pandas as pd
 import math
-
 
 
 fontCss = {'font-family': "Arial, Meiryo", 'font-size': '16pt'}
@@ -80,20 +77,6 @@ target_req_suica = nfc.clf.RemoteTarget("212F")
 # 0003(Suica)
 target_req_suica.sensf_req = bytearray.fromhex("0000030000")
 
-"""
-                    #特定のIDmだった場合のアクション
-                    if str(idm) == "b'0139727fffb7e6f5'":
-                        QMessageBox.warning(None, "Notice!", "増野さんおはようございます！", QMessageBox.Yes)
-                        self.Ui_MainWindow.shukkinnButton.setStyleSheet("QPushButton:checked{background-color: rgb(200, 200, 0)}")
-                        self.clf.close()
-                        break
-                    else:
-                        QMessageBox.warning(None, "Notice!", "未登録です。", QMessageBox.Yes)
-                        self.Ui_MainWindow.shukkinnButton.setStyleSheet("QPushButton:checked{background-color: rgb(200, 200, 200)}")
-                        self.clf.close()
-                        break
-"""
-
 
 class MainWindow(QMainWindow):
     def __init__(self, parent = None):
@@ -102,16 +85,14 @@ class MainWindow(QMainWindow):
         self.Ui_MainWindow = QtUiTools.QUiLoader().load("./suica_ui.ui")
         self.Ui_MainWindow.setWindowTitle("出退勤入力ツール")
 
-        self.Ui_MainWindow.shukkinnButton.setCheckable(True)
-        self.Ui_MainWindow.taikinButton.setCheckable(True)
         # pressedは、すぐリリースされる。
         self.Ui_MainWindow.shukkinnButton.setStyleSheet("QPushButton::checked{background-color: #aaff00}")
         self.Ui_MainWindow.taikinButton.setStyleSheet("QPushButton:checked{background-color: #aaff00}")
         #self.Ui_MainWindow.shukkinnButton.toggle()
         #self.Ui_MainWindow.taikinButton.toggle()
-        self.Ui_MainWindow.shukkinnButton.clicked.connect(self.shukkin)
+        self.Ui_MainWindow.readButton.clicked.connect(self.read_card)
         #self.Ui_MainWindow.shukkinnButton.released.connect(lambda:self.device_close())
-        self.Ui_MainWindow.taikinButton.clicked.connect(self.taikin)
+        #self.Ui_MainWindow.taikinButton.clicked.connect(self.taikin)
         #self.Ui_MainWindow.taikinButton.released.connect(lambda:self.device_close())
 
         layout = QVBoxLayout()
@@ -120,49 +101,29 @@ class MainWindow(QMainWindow):
         self.clearLayout(self.layout)
         DrawClock.draw_graph(self) # DrawClockは、execの中で定義する必要がある。 
 
+    def read_card(self):
+        import sqlite3
+        dbname = 'idm_and_name.db'
+        conn = sqlite3.connect(dbname)
+        df = pd.read_sql_query('SELECT * FROM persons', conn)
 
-    def device_close(self):
-        try:
-            self.clf.close()
-            print('clf closed.')
-        except:
-            print('clf already closed.')
-
-    def button_state_shukkinn(self):
         if self.Ui_MainWindow.shukkinnButton.isChecked():
-            #self.device_close()
-            self.Ui_MainWindow.shukkinnButton.toggle()
-            #self.Ui_MainWindow.taikinButton.toggle()
-        else:
-            pass
+            try:
+                dt_now = datetime.datetime.now()
+                idm = self.readSuica()
+                #msg = QMessageBox()
+                #msg.question(currentWindow, None, "Notice!", idm+'\n'+'出勤\n'+str(dt_now), QMessageBox.Yes)
+                #QMessageBox.about(icon, '出勤', idm, dt_now)
+            except:
+                print('Read Error!')
+        elif self.Ui_MainWindow.taikinButton.isChecked():
+            try:
+                dt_now = datetime.datetime.now()
+                idm = self.readSuica()
+                print('退勤', idm, dt_now)
+            except:
+                print('Read Error!')
 
-    def button_state_taikin(self):
-        if self.Ui_MainWindow.taikinButton.isChecked():
-            self.Ui_MainWindow.taikinButton.toggle()
-            #self.Ui_MainWindow.shukkinnButton.toggle()
-        else:
-            pass
-
-    def shukkin(self):
-        if self.Ui_MainWindow.taikinButton.isChecked():
-            self.Ui_MainWindow.taikinButton.toggle()
-            #self.button_state_taikin()
-            print('Now shukkin')
-            idm = self.readSuica()
-            print(idm)
-        else:
-            #self.button_state_taikin()
-            print('Now shukkin')
-            idm = self.readSuica()
-            print(idm)
-        self.Ui_MainWindow.shukkinnButton.toggle()
-
-    def taikin(self):
-        self.button_state_shukkinn()
-        print('Now taikin')
-        idm = self.readSuica()
-        print(idm)
-        self.Ui_MainWindow.taikinButton.toggle()
 
     def readSuica(self):
         try:
@@ -177,8 +138,24 @@ class MainWindow(QMainWindow):
                 if target_res is None:
                     try_num = try_num + 1
                     if try_num > 3:
-                        self.device_close()
-                        QMessageBox.warning(None, "Notice!", "カードを置いてください!", QMessageBox.Yes)
+                        clf.close()
+
+
+                        button = QMessageBox.critical(
+                            self,
+                            "Oh dear!",
+                            "Something went very wrong.",
+                            buttons=QMessageBox.Discard | QMessageBox.NoToAll | QMessageBox.Ignore,
+                            defaultButton=QMessageBox.Discard,
+                        )
+
+                        if button == QMessageBox.Discard:
+                            print("Discard!")
+                        elif button == QMessageBox.NoToAll:
+                            print("No to all!")
+                        else:
+                            print("Ignore!")
+
                     else:
                         pass
                 else:
@@ -204,6 +181,29 @@ class MainWindow(QMainWindow):
             if childWidget:
                 childWidget.setParent(None)
                 childWidget.deleteLater()
+
+class CustomDialog(QDialog):
+    def __init__(self, arg, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("HELLO!")
+        #self.message_text = arg
+
+        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+
+        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+
+        self.layout = QVBoxLayout()
+        message = QLabel(arg)
+        self.layout.addWidget(message)
+        self.layout.addWidget(self.buttonBox)
+        self.setLayout(self.layout)
+
+
+
+
 
 
 class DrawClock():
