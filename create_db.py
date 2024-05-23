@@ -10,6 +10,12 @@ cur = conn.cursor()
 cur.execute(
     'CREATE TABLE persons(idm STRING, name STRING)')
 
+
+conn.commit()
+cur.execute(
+    'INSERT INTO persons values("0139727fffb7e6f5", "増野")')
+
+
 # データベースへコミット。これで変更が反映される。
 conn.commit()
 conn.close()

@@ -9,6 +9,10 @@ from PySide6.QtGui import QFont
 import datetime
 import sys
 
+t_delta = datetime.timedelta(hours=9)
+JST = datetime.timezone(t_delta, 'JST')
+now = datetime.datetime.now(JST)
+
 from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QApplication
 
 
@@ -109,13 +113,37 @@ class MainWindow(QMainWindow):
 
         if self.Ui_MainWindow.shukkinnButton.isChecked():
             try:
-                dt_now = datetime.datetime.now()
+                dt_now = now.strftime('%Y/%m/%d %I:%M(%p)')
                 idm = self.readSuica()
+                if idm == 0:
+                    button = QMessageBox.question(self, "Error dialog", "読み取りできません。")
+                    if button == QMessageBox.Yes:
+                        print("Yes!")
+                    else:
+                        print("No!")
+                else:
+                    if pd.isnull(df.query('idm == idm')['name'].values[0]):
+                        button = QMessageBox.question(self, "Error", "未登録です!")
+                        if button == QMessageBox.Yes:
+                            print("Yes!")
+                        else:
+                            print("No!")
+                    else:
+                        name = df.query('idm == idm')['name'].values[0]
+                        print(name)
+
+                        button = QMessageBox.question(self, "Result", str(name)+'\n'+str(dt_now)+"\n登録しますか?")
+                        if button == QMessageBox.Yes:
+                            print("Yes!")
+                        else:
+                            print("No!")
                 #msg = QMessageBox()
                 #msg.question(currentWindow, None, "Notice!", idm+'\n'+'出勤\n'+str(dt_now), QMessageBox.Yes)
                 #QMessageBox.about(icon, '出勤', idm, dt_now)
             except:
-                print('Read Error!')
+                pass
+
+
         elif self.Ui_MainWindow.taikinButton.isChecked():
             try:
                 dt_now = datetime.datetime.now()
@@ -126,6 +154,7 @@ class MainWindow(QMainWindow):
 
 
     def readSuica(self):
+        idm = 0
         try:
             clf = nfc.ContactlessFrontend('usb')
             self.clf = clf
@@ -139,23 +168,7 @@ class MainWindow(QMainWindow):
                     try_num = try_num + 1
                     if try_num > 3:
                         clf.close()
-
-
-                        button = QMessageBox.critical(
-                            self,
-                            "Oh dear!",
-                            "Something went very wrong.",
-                            buttons=QMessageBox.Discard | QMessageBox.NoToAll | QMessageBox.Ignore,
-                            defaultButton=QMessageBox.Discard,
-                        )
-
-                        if button == QMessageBox.Discard:
-                            print("Discard!")
-                        elif button == QMessageBox.NoToAll:
-                            print("No to all!")
-                        else:
-                            print("Ignore!")
-
+                        break
                     else:
                         pass
                 else:
