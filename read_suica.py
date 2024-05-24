@@ -116,11 +116,24 @@ class MainWindow(QMainWindow):
                 dt_now = now.strftime('%Y/%m/%d %I:%M(%p)')
                 idm = self.readSuica()
                 if idm == 0:
-                    button = QMessageBox.question(self, "Error dialog", "読み取りできません。")
-                    if button == QMessageBox.Yes:
-                        print("Yes!")
-                    else:
-                        print("No!")
+                    #button = QMessageBox.question(self, "Error dialog", "読み取りできません。")
+                    #if button == QMessageBox.Yes:
+                    #    print("Yes!")
+                    #else:
+                    #    print("No!")
+
+                    QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+
+                    buttonBox = QDialogButtonBox(QBtn)
+                    print('can not read')
+                    #buttonBox.accepted.connect(accept)
+                    #buttonBox.rejected.connect(reject)
+                    layout = QVBoxLayout()
+                    message = QLabel('test')
+                    layout.addWidget(message)
+                    layout.addWidget(buttonBox)
+                    QDialog.setLayout(layout)
+
                 else:
                     if pd.isnull(df.query('idm == idm')['name'].values[0]):
                         button = QMessageBox.question(self, "Error", "未登録です!")
