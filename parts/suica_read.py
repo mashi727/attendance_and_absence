@@ -18,6 +18,27 @@ target_req_suica = nfc.clf.RemoteTarget("212F")
 # 0003(Suica)
 target_req_suica.sensf_req = bytearray.fromhex("0000030000")
 
+
+
+
+import platform
+osname = platform.system()
+def get_screensize():
+    if osname == 'Darwin':
+        from screeninfo import get_monitors
+        for monitor in get_monitors():
+            width = monitor.width
+            height = monitor.height
+        return width, height
+    elif osname == 'Windows':
+        import ctypes
+        user32 = ctypes.windll.user32
+        screensize = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
+        return screensize[0], screensize[1]
+
+
+
+
 print('Suicaをタッチしてください')
 # USBに接続されたNFCリーダに接続してインスタンス化
 clf = nfc.ContactlessFrontend('usb')
