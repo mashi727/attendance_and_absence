@@ -278,7 +278,7 @@ class DrawClock():
             graph.plot([x1, x2], [y1, y2], pen=pen)
 
 
-        font_size = 44
+        font_size = 36
 
         hour_texts = []
 
