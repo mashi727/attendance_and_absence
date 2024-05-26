@@ -54,18 +54,18 @@ def led_on(COLOR):
         elif COLOR == 'YELLOW':
             GPIO_NUM = 21
 
-    import pigpio
-    pi = pigpio.pi() # local環境
-    pi.set_mode(GPIO_NUM, pigpio.OUTPUT)
+        import pigpio
+        pi = pigpio.pi() # local環境
+        pi.set_mode(GPIO_NUM, pigpio.OUTPUT)
 
-    try:
-        pi.write(GPIO_NUM, 1)
-        time.sleep(1.5)
-        pi.write(GPIO_NUM, 0)
-        pi.set_mode(GPIO_NUM, pigpio.INPUT)
-        pi.stop()
-    except KeyboardInterrupt:  # Ctrl+Cを押すとループを抜ける
-        pass
+        try:
+            pi.write(GPIO_NUM, 1)
+            time.sleep(1.5)
+            pi.write(GPIO_NUM, 0)
+            pi.set_mode(GPIO_NUM, pigpio.INPUT)
+            pi.stop()
+        except KeyboardInterrupt:  # Ctrl+Cを押すとループを抜ける
+            pass
 
 
 def on_connect(tag):
