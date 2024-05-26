@@ -52,6 +52,10 @@ fontCss["color"] = '#fff'
 
 
 
+
+
+
+
 # tag::model[]
 
 # end::model[]
@@ -99,11 +103,16 @@ class MainWindow(QMainWindow):
         #self.Ui_MainWindow.taikinButton.clicked.connect(self.taikin)
         #self.Ui_MainWindow.taikinButton.released.connect(lambda:self.device_close())
 
+
+
+
         layout = QVBoxLayout()
         self.Ui_MainWindow.widget.setLayout(layout)
         self.layout = layout
         self.clearLayout(self.layout)
         DrawClock.draw_graph(self) # DrawClockは、execの中で定義する必要がある。 
+
+
 
     def read_card(self):
         import sqlite3
