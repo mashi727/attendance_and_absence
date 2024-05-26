@@ -3,7 +3,8 @@ import binascii
 import nfc
 import time
 import sys
-from threading import Thread, Timer
+
+# 将来的には、QThreadを使ってGUIでも読み取り中に画面がロックしないようにする。
 
 # Suica待ち受けの1サイクル秒
 TIME_cycle = 0.5
@@ -12,22 +13,29 @@ TIME_interval = 0.2
 # タッチされてから次の待ち受けを開始するまで無効化する秒
 TIME_wait = 1.5
 
-# NFC接続リクエストのための準備
-# 212F(FeliCa)で設定
-#target_req_suica = nfc.clf.RemoteTarget("212F")
-# 0003(Suica)
-#target_req_suica.sensf_req = bytearray.fromhex("0000030000")
-
-
-
 
 
 def led_on(COLOR):
-    # GPIO_NUM
-    # RED 16
-    # BLUE 20
-    # YELLOW 21
+    """
+    引数の色に従ってLEDをONにする。
+
+    ////// メモ //////
+
+    ラズパイのGPIO_NUMは、以下の通りとしている。
+    RED 16
+    BLUE 20
+    YELLOW 21
     
+    GPIO and the 40-pin headerの仕様は、以下を参照すること。
+    https://www.raspberrypi.com/documentation/computers/raspberry-pi.html
+    """
+
+
+    """
+    LEDはラズパイにしかないので、plathomeにてMacもしくはラズパイの判定を行って
+    処理を分岐している。
+    Macの場合は、コンソールに表示するだけ。
+    """
     import platform
     osname = platform.system()
     if osname == 'Darwin':
@@ -49,7 +57,7 @@ def led_on(COLOR):
     import pigpio
     pi = pigpio.pi() # local環境
     pi.set_mode(GPIO_NUM, pigpio.OUTPUT)
-    
+
     try:
         pi.write(GPIO_NUM, 1)
         time.sleep(1.5)
@@ -58,8 +66,6 @@ def led_on(COLOR):
         pi.stop()
     except KeyboardInterrupt:  # Ctrl+Cを押すとループを抜ける
         pass
-    # cleanup
-
 
 
 def on_connect(tag):
