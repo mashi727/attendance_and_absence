@@ -47,8 +47,8 @@ def led_on(COLOR):
             GPIO_NUM = 21
 
     import pigpio
-    pi.set_mode(GPIO_NUM, pigpio.OUTPUT)
     pi = pigpio.pi() # local環境
+    pi.set_mode(GPIO_NUM, pigpio.OUTPUT)
     
     try:
         while True:  # 16番ピンのLEDの点灯→消灯を繰り返す
