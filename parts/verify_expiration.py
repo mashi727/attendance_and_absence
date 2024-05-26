@@ -51,15 +51,14 @@ def led_on(COLOR):
     pi.set_mode(GPIO_NUM, pigpio.OUTPUT)
     
     try:
-        while True:  # 16番ピンのLEDの点灯→消灯を繰り返す
-            pi.write(GPIO_NUM, 1)
-            time.sleep(1.5)
-            pi.write(GPIO_NUM, 0)
+        pi.write(GPIO_NUM, 1)
+        time.sleep(1.5)
+        pi.write(GPIO_NUM, 0)
+        pi.set_mode(GPIO_NUM, pigpio.INPUT)
+        pi.stop()
     except KeyboardInterrupt:  # Ctrl+Cを押すとループを抜ける
         pass
     # cleanup
-    pi.set_mode(GPIO_NUM, pigpio.INPUT)
-    pi.stop()
 
 
 
